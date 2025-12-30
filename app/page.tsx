@@ -6,7 +6,7 @@ import { getKeywords, KeywordResult } from "../lib/suggestions"
 export default function Home() {
   const [query, setQuery] = useState("")
   const [country, setCountry] = useState("India")
-  const [result, setResult] = useState<KeywordResult>({ base: [], questions: [] })
+  const [result, setResult] = useState<KeywordResult | null>(null)
   const [loading, setLoading] = useState(false)
 
   const popularIdeas = [
@@ -27,8 +27,13 @@ export default function Home() {
     if (!query.trim()) return
 
     setLoading(true)
-    const keywords = await getKeywords(query, country)
-    setResult(keywords)
+    try {
+      const keywords = await getKeywords(query, country)
+      setResult(keywords) // 👈 Always returns object
+    } catch (err) {
+      console.error("Failed to fetch keywords", err)
+      setResult({ base: [], questions: [] }) // 👈 Fallback
+    }
     setLoading(false)
   }
 
@@ -84,39 +89,52 @@ export default function Home() {
           </div>
         )}
 
-        {!loading && result.base.length === 0 && !query && (
+        {/* Show message if no query */}
+        {!loading && !query && (
           <div className="text-center text-gray-500">
             <p>Enter a business idea to get started.</p>
           </div>
         )}
 
-        {result.base.length > 0 && (
-          <div className="bg-white p-6 rounded-lg shadow-md mb-6">
-            <h2 className="text-xl font-semibold mb-3 text-gray-800">
-              General Keyword Ideas
-            </h2>
-            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {result.base.map((kw) => (
-                <li key={kw} className="py-1 px-2 bg-blue-50 text-blue-800 rounded text-sm">
-                  {kw}
-                </li>
-              ))}
-            </ul>
-          </div>
+        {/* Show results if available */}
+        {!loading && result && (
+          <>
+            {result.base.length > 0 && (
+              <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+                <h2 className="text-xl font-semibold mb-3 text-gray-800">
+                  General Keyword Ideas
+                </h2>
+                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {result.base.map((kw) => (
+                    <li key={kw} className="py-1 px-2 bg-blue-50 text-blue-800 rounded text-sm">
+                      {kw}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {result.questions.length > 0 && (
+              <div className="bg-white p-6 rounded-lg shadow-md">
+                <h2 className="text-xl font-semibold mb-3 text-gray-800">
+                  Customer Questions (SEO Gold!)
+                </h2>
+                <ul className="space-y-1">
+                  {result.questions.map((kw) => (
+                    <li key={kw} className="py-2 px-3 border-b border-gray-100 last:border-0 text-gray-700">
+                      <strong>{kw}</strong>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </>
         )}
 
-        {result.questions.length > 0 && (
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-xl font-semibold mb-3 text-gray-800">
-              Customer Questions (SEO Gold!)
-            </h2>
-            <ul className="space-y-1">
-              {result.questions.map((kw) => (
-                <li key={kw} className="py-2 px-3 border-b border-gray-100 last:border-0 text-gray-700">
-                  <strong>{kw}</strong>
-                </li>
-              ))}
-            </ul>
+        {/* Show error if result is null */}
+        {!loading && !result && (
+          <div className="text-center text-red-500">
+            <p>Something went wrong. Please try again.</p>
           </div>
         )}
       </div>
