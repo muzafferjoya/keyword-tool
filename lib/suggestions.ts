@@ -6,25 +6,42 @@ export type KeywordResult = {
 
 const prefixes = ["how", "what", "why", "best", "near me"]
 
-// Free CORS proxy (AllOrigins)
-const corsProxy = 'https://api.allorigins.win/get?url='
-
 async function fetchSuggest(query: string): Promise<string[]> {
   try {
     const url = `https://suggestqueries.google.com/complete/search?client=firefox&q=${encodeURIComponent(query)}`
-    const proxiedUrl = corsProxy + encodeURIComponent(url)
-
-    const res = await fetch(proxiedUrl)
     
-    if (!res.ok) return []
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0',
+        'Accept': 'application/json',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Referer': 'https://www.google.com/',
+        'Origin': 'https://www.google.com'
+      },
+      mode: 'no-cors' // Bypass CORS
+    })
+    
+    if (!res.ok) {
+      console.warn('Request failed:', res.status)
+      return []
+    }
 
-    const data = await res.json()
-    const rawBody = data.contents // AllOrigins returns { contents: "..." }
+    // Try to get response as text
+    let text = ''
+    try {
+      text = await res.text()
+    } catch (e) {
+      console.warn('Failed to read response text:', e)
+      return []
+    }
 
-    // Parse JSON from string
+    // Log raw response for debugging
+    console.log('Raw response:', text.substring(0, 200)) // First 200 chars
+
+    // Parse JSON manually
     let json
     try {
-      json = JSON.parse(rawBody)
+      json = JSON.parse(text)
     } catch (e) {
       console.warn('Failed to parse JSON:', e)
       return []
@@ -32,9 +49,12 @@ async function fetchSuggest(query: string): Promise<string[]> {
 
     // Extract suggestions: [query, [suggestions], ...]
     if (Array.isArray(json) && Array.isArray(json[1])) {
-      return json[1].map(s => String(s).trim()).filter(Boolean)
+      const suggestions = json[1].map(s => String(s).trim()).filter(Boolean)
+      console.log('Parsed suggestions:', suggestions.length, suggestions)
+      return suggestions
     }
     
+    console.warn('Invalid response format:', json)
     return []
   } catch (err) {
     console.warn('Fetch failed:', err)

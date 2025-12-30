@@ -1,3 +1,4 @@
+// app/page.tsx
 "use client"
 
 import { useState } from "react"
@@ -29,10 +30,10 @@ export default function Home() {
     setLoading(true)
     try {
       const keywords = await getKeywords(query, country)
-      setResult(keywords) // 👈 Always returns object
+      setResult(keywords)
     } catch (err) {
       console.error("Failed to fetch keywords", err)
-      setResult({ base: [], questions: [] }) // 👈 Fallback
+      setResult({ base: [], questions: [] })
     }
     setLoading(false)
   }
@@ -89,14 +90,12 @@ export default function Home() {
           </div>
         )}
 
-        {/* Show message if no query */}
         {!loading && !query && (
           <div className="text-center text-gray-500">
             <p>Enter a business idea to get started.</p>
           </div>
         )}
 
-        {/* Show results if available */}
         {!loading && result && (
           <>
             {result.base.length > 0 && (
@@ -131,7 +130,6 @@ export default function Home() {
           </>
         )}
 
-        {/* Show error if result is null */}
         {!loading && !result && (
           <div className="text-center text-red-500">
             <p>Something went wrong. Please try again.</p>
